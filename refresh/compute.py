@@ -22,7 +22,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(BASE, "data", "raw")
 OUT = os.path.join(BASE, "data", "dashboard")
 
-TODAY = date(2026, 9, 9)  # overridden below by the latest date seen in daily_steps/sleep if available
+TODAY = date.today()  # advances automatically on every refresh - do not hardcode
 GOAL_RACE_DATE = date(2026, 10, 11)
 GOAL_RACE_NAME = "Amica Newport Marathon"
 
