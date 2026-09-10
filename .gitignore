@@ -1,0 +1,11 @@
+# Personal Garmin data - never commit
+data/raw/
+data/dashboard/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

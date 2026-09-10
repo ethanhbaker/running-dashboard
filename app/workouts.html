@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workouts · Ethan's Training</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ---- page-scoped styles for the workout builder (not in shared style.css) ---- */
+
+    .workout-card + .workout-card { margin-top: 14px; }
+
+    .workout-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .workout-card-title { display: flex; flex-direction: column; gap: 2px; }
+    .workout-card-title .name { font-family: var(--font-display); font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.01em; }
+    .workout-card-title .date { font-size: 12px; color: var(--text-muted); }
+    .workout-card-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .workout-card-reason { font-size: 13px; color: var(--text-secondary); margin: 6px 0 12px; }
+    .te-note { font-size: 11px; color: var(--text-muted); margin-left: 4px; }
+    .workout-note { font-size: 12.5px; color: var(--text-muted); font-style: italic; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+
+    .indicator { text-align: center; }
+
+    /* ---- builder ---- */
+
+    .preset-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+    .btn {
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--grid); }
+    .btn.btn-primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+    .btn.btn-primary:hover { opacity: 0.9; }
+    .btn.btn-remove {
+      border-radius: 8px;
+      padding: 6px 9px;
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .btn.btn-remove:hover { color: var(--critical); border-color: var(--critical); }
+
+    .segment-list { display: flex; flex-direction: column; }
+    .segment-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .segment-row:last-child { border-bottom: none; }
+
+    .segment-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .segment-field label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .segment-field input, .segment-field select {
+      font: inherit;
+      font-size: 13px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-primary);
+    }
+    .segment-field.type { width: 176px; }
+    .segment-field.repeat { width: 70px; }
+    .segment-field.distance { width: 90px; }
+    .segment-field.pace { width: 96px; }
+    .segment-remove-wrap { margin-left: auto; }
+
+    .segment-basis {
+      flex-basis: 100%;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-top: -4px;
+    }
+    .segment-preset-note {
+      flex-basis: 100%;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .builder-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .builder-subhead {
+      font-family: var(--font-display);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 22px 0 10px;
+    }
+    .builder-subhead:first-of-type { margin-top: 22px; }
+
+    .export-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      width: 100%;
+      min-height: 160px;
+      resize: vertical;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-primary);
+    }
+
+    @media (max-width: 560px) {
+      .segment-row { flex-direction: column; align-items: stretch; gap: 8px; }
+      .segment-field.type, .segment-field.repeat, .segment-field.distance, .segment-field.pace { width: 100%; }
+      .segment-remove-wrap { margin-left: 0; align-self: flex-end; }
+      .segment-basis { margin-top: 0; }
+    }
+  </style>
+</head>
+<body data-page="workouts">
+  <main class="app-main" id="main"></main>
+
+  <script src="js/layout.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/workouts.js"></script>
+</body>
+</html>

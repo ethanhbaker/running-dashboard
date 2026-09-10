@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marathon · Ethan's Training</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ---------- page-scoped styles (marathon.html only) ---------- */
+
+    .detail-block { margin-bottom: 18px; }
+    .detail-block:last-child { margin-bottom: 0; }
+    .detail-block .tile-label { margin-bottom: 4px; }
+    .detail-block p { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    .detail-block-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .detail-block-head .tile-label { margin-bottom: 0; }
+    .detail-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+    .taper-math {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+    }
+
+    .next-session-box {
+      margin-top: 4px;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .next-session-name { font-weight: 700; font-size: 14px; }
+    .next-session-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .chart-legend .legend-item { display: flex; align-items: center; gap: 6px; }
+    .chart-legend .legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+    /* ---------- pace-split tool ---------- */
+
+    .pace-tool-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin: 8px 0 14px;
+    }
+
+    .pace-tool-summary {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .pace-tool-summary .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+    .pace-tool-summary .stat-value { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+
+    .pace-tool-controls {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .pace-tool-controls label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .pace-tool-controls input[type="text"] {
+      width: 84px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    .pace-tool-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pace-tool-btn:hover { background: var(--surface-2); }
+    .pace-tool-btn.reset { color: var(--text-secondary); }
+
+    .pace-tool-svg-wrap { touch-action: none; }
+    .pace-point { cursor: grab; touch-action: none; }
+    .pace-point:active { cursor: grabbing; }
+    .pace-point.overridden { stroke: var(--text-primary); stroke-width: 1.5; }
+
+    .demo-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: color-mix(in srgb, var(--warning) 22%, transparent);
+      color: #8a6100;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    :root:not([data-theme="light"]) .demo-banner { color: var(--warning); }
+
+    .demo-wrap {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+
+    @media (max-width: 460px) {
+      .pace-tool-summary { gap: 14px; }
+      .pace-tool-controls { gap: 8px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="marathon">
+  <main class="app-main" id="main"></main>
+
+  <script src="js/layout.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/marathon.js"></script>
+</body>
+</html>

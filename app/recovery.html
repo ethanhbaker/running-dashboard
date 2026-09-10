@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery &amp; Risk · Ethan's Training</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ---- recovery/risk-page-specific styles (scoped to this page) ---- */
+    .recovery-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .chart-card h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .chart-legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .chart-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .chart-legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+      flex: none;
+    }
+    .callout.positive { border-left-color: var(--good); }
+    .callout.caution { border-left-color: var(--warning); }
+    .callout p.flag-line { margin-bottom: 10px; }
+    .callout p.flag-line:last-child { margin-bottom: 0; }
+    .checklist-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .checklist-row:last-child { border-bottom: none; }
+    .risk-card-title {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+    .risk-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Force the two risk cards to stack below ~700px, matching the app nav breakpoint. */
+    @media (max-width: 700px) {
+      .risk-card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="recovery">
+  <main class="app-main" id="main"></main>
+
+  <script src="js/layout.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/recovery.js"></script>
+</body>
+</html>
