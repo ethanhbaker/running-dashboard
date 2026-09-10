@@ -156,6 +156,42 @@ a:hover { text-decoration: underline; }
   gap: 5px;
 }
 
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.refresh-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--axis);
+}
+.refresh-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+.refresh-btn-icon {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+}
+.refresh-btn-icon.spinning {
+  animation: refresh-spin 0.8s linear infinite;
+}
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .legend-dot {
   width: 8px;
   height: 8px;

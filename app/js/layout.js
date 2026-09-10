@@ -23,6 +23,23 @@ function parseLocalDate(value) {
   return new Date(value);
 }
 
+function lastPulledText(meta) {
+  return meta?.generated_at ? new Date(meta.generated_at).toLocaleString() : "—";
+}
+
+// Re-applies the parts of the header/footer that depend on meta.json
+// (the date line and the "last pulled" timestamp) without touching nav.
+function updateLayoutMeta(meta) {
+  const dateEl = document.getElementById("header-date");
+  if (dateEl) {
+    dateEl.textContent = parseLocalDate(meta?.data_as_of || Date.now()).toLocaleDateString(undefined, {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+  }
+  const pulledEl = document.getElementById("footer-last-pulled");
+  if (pulledEl) pulledEl.textContent = lastPulledText(meta);
+}
+
 function renderLayout(meta) {
   const current = document.body.dataset.page;
   const dateStr = parseLocalDate(meta?.data_as_of || Date.now()).toLocaleDateString(undefined, {
@@ -37,13 +54,18 @@ function renderLayout(meta) {
         <div class="app-title display">${meta?.athlete_name || "Ethan"}'s Training</div>
       </div>
       <div class="app-header-meta">
-        <span>${dateStr}</span>
+        <span id="header-date">${dateStr}</span>
         <span class="legend">
           <span class="legend-item"><span class="legend-dot garmin"></span>Garmin-recorded</span>
           <span class="legend-item"><span class="legend-dot coach"></span>Coach interpretation</span>
         </span>
+        <button type="button" id="refresh-data-btn" class="refresh-btn" title="Re-fetch the latest computed data/dashboard/*.json and re-render this page. This does NOT pull new data from Garmin - run the refresh pipeline (refresh/PULL.md) for that first.">
+          <span class="refresh-btn-icon">&#8635;</span> Refresh
+        </button>
       </div>
     </div>`;
+
+  header.querySelector("#refresh-data-btn").addEventListener("click", (e) => refreshDashboardData(e.currentTarget));
 
   const nav = document.createElement("nav");
   nav.className = "app-nav";
@@ -62,7 +84,7 @@ function renderLayout(meta) {
   footer.className = "app-footer";
   footer.innerHTML = `
     <div class="max-w">
-      Data from Garmin Connect, last pulled ${meta?.generated_at ? new Date(meta.generated_at).toLocaleString() : "—"}.<br>
+      Data from Garmin Connect, last pulled <span id="footer-last-pulled">${lastPulledText(meta)}</span>.<br>
       Scheduled/planned sessions only ever appear as schedule context, never as completed-run stats.
       Garmin fields not available for this account are omitted rather than estimated.
     </div>`;
@@ -83,16 +105,52 @@ async function loadJSON(path) {
   }
 }
 
+let _currentPageFile = null;
+let _currentRenderFn = null;
+
+function runRender(data, meta) {
+  const main = document.querySelector(".app-main");
+  if (main) main.innerHTML = "";
+  try {
+    _currentRenderFn(data, meta);
+  } catch (e) {
+    console.error(e);
+    if (main) main.innerHTML += `<div class="empty-state">Something went wrong rendering this page: ${e.message}</div>`;
+  }
+}
+
 async function initPage(pageDataFile, renderFn) {
+  _currentPageFile = pageDataFile;
+  _currentRenderFn = renderFn;
   const meta = await loadJSON("../data/dashboard/meta.json");
   renderLayout(meta || {});
   const data = pageDataFile ? await loadJSON(`../data/dashboard/${pageDataFile}`) : null;
+  runRender(data, meta);
+}
+
+// Re-fetches meta.json + this page's data file (both already requested with
+// cache: "no-store", so this always reflects whatever is currently on disk
+// under data/dashboard/) and re-renders in place. Wired to the header's
+// "Refresh" button. This reads already-computed files - it does not itself
+// contact Garmin or run refresh/compute.py.
+async function refreshDashboardData(button) {
+  const original = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `<span class="refresh-btn-icon spinning">&#8635;</span> Refreshing…`;
   try {
-    renderFn(data, meta);
+    const meta = await loadJSON("../data/dashboard/meta.json");
+    updateLayoutMeta(meta || {});
+    const data = _currentPageFile ? await loadJSON(`../data/dashboard/${_currentPageFile}`) : null;
+    runRender(data, meta);
+    button.innerHTML = `<span class="refresh-btn-icon">&#10003;</span> Updated`;
   } catch (e) {
     console.error(e);
-    const main = document.querySelector(".app-main");
-    if (main) main.innerHTML += `<div class="empty-state">Something went wrong rendering this page: ${e.message}</div>`;
+    button.innerHTML = `<span class="refresh-btn-icon">&#33;</span> Failed`;
+  } finally {
+    setTimeout(() => {
+      button.innerHTML = original;
+      button.disabled = false;
+    }, 1500);
   }
 }
 
