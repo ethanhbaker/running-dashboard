@@ -311,8 +311,67 @@ function renderLoadSection(data) {
 }
 
 // ---------------------------------------------------------------------
+// Section 5: Route heatmap (real GPS tracks, no map-tile dependency)
+// ---------------------------------------------------------------------
 
-function renderTraining(data, meta) {
+const HEAT_STROKE = "rgba(217, 73, 31, 0.14)";
+
+function buildRouteHeatmapSvg(loc) {
+  const svg = svgEl("svg", {
+    viewBox: `0 0 ${loc.viewbox_width} ${loc.viewbox_height}`,
+    width: "100%",
+    preserveAspectRatio: "xMidYMid meet",
+  });
+  loc.routes.forEach((route) => {
+    if (route.length < 2) return;
+    const d = route.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
+    svg.appendChild(svgEl("path", {
+      d, fill: "none", stroke: HEAT_STROKE, "stroke-width": 1.6,
+      "stroke-linecap": "round", "stroke-linejoin": "round",
+    }));
+  });
+  return svg;
+}
+
+function renderRouteHeatmapSection(heatData) {
+  const section = el("section", { className: "page-section" });
+  section.appendChild(sectionHeader("Route heatmap", "Real GPS tracks - brighter where a route repeats"));
+
+  if (!heatData || !heatData.available) {
+    section.appendChild(el("div", {
+      className: "empty-state",
+      text: (heatData && heatData.note) || "Route heatmap not available - no GPX tracks have been pulled yet.",
+    }));
+    return section;
+  }
+
+  const grid = el("div", { className: "card-grid" });
+  Object.entries(heatData.locations).forEach(([name, loc]) => {
+    const card = el("div", { className: "card" });
+    card.appendChild(el("div", {
+      className: "tile-label",
+      text: `${name} — ${loc.run_count} run${loc.run_count === 1 ? "" : "s"}, ${loc.total_distance_mi}mi`,
+    }));
+    if (loc.date_range) {
+      card.appendChild(el("div", {
+        className: "section-note", attrs: { style: "text-align:left;margin-bottom:8px;" },
+        text: `${longDate(loc.date_range[0])} – ${longDate(loc.date_range[1])}`,
+      }));
+    }
+    const chartWrap = el("div", { className: "chart-wrap" });
+    chartWrap.appendChild(buildRouteHeatmapSvg(loc));
+    card.appendChild(chartWrap);
+    grid.appendChild(card);
+  });
+  section.appendChild(grid);
+  section.appendChild(el("div", { className: "cal-note", attrs: { style: "margin-top:10px;" }, text: heatData.note }));
+
+  return section;
+}
+
+// ---------------------------------------------------------------------
+
+async function renderTraining(data, meta) {
   const main = document.getElementById("main");
   if (!data) {
     main.appendChild(el("div", { className: "empty-state", text: "Training data isn't available right now." }));
@@ -323,6 +382,14 @@ function renderTraining(data, meta) {
   main.appendChild(renderCalendarSection(data));
   main.appendChild(renderRecentRunsSection(data));
   main.appendChild(renderLoadSection(data));
+
+  try {
+    const heatData = await loadJSON("../data/dashboard/route_heatmap.json");
+    main.appendChild(renderRouteHeatmapSection(heatData));
+  } catch (e) {
+    console.error(e);
+    main.appendChild(el("div", { className: "empty-state", text: "Route heatmap failed to load." }));
+  }
 }
 
 initPage("training.json", renderTraining);

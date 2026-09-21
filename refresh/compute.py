@@ -16,6 +16,7 @@ import json
 import math
 import os
 import statistics
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, date
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1033,8 +1034,116 @@ def build_meta():
     }
 
 
+GPX_DIR = os.path.join(RAW, "gpx")
+GPX_NS = "{http://www.topografix.com/GPX/1/1}"
+
+
+def parse_gpx_points(path, every_nth=6):
+    """Returns (track_name, [(lat, lon), ...]) subsampled every_nth point.
+    Flattens all <trkseg> in the file into one point list - fine for a
+    heatmap (a pause between segments just draws one extra short connector)."""
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError:
+        return None, []
+    root = tree.getroot()
+    trk = root.find(f"{GPX_NS}trk")
+    name_el = trk.find(f"{GPX_NS}name") if trk is not None else None
+    name = name_el.text if name_el is not None else None
+    points = []
+    for i, trkpt in enumerate(root.iter(f"{GPX_NS}trkpt")):
+        if i % every_nth != 0:
+            continue
+        lat, lon = trkpt.get("lat"), trkpt.get("lon")
+        if lat is None or lon is None:
+            continue
+        points.append((float(lat), float(lon)))
+    return name, points
+
+
+def build_route_heatmap():
+    """Rule 2: if no GPX tracks have been pulled, say so plainly rather than
+    showing an empty map with no explanation."""
+    if not os.path.isdir(GPX_DIR) or not os.listdir(GPX_DIR):
+        return {
+            "available": False,
+            "note": "No GPX tracks pulled yet. See refresh/PULL.md 'Route heatmap' section to pull them.",
+        }
+
+    activities_by_id = {a["id"]: a for a in activities}
+    locations = {}
+
+    for fname in sorted(os.listdir(GPX_DIR)):
+        if not fname.endswith(".gpx"):
+            continue
+        try:
+            activity_id = int(fname[:-4])
+        except ValueError:
+            continue
+        name, points = parse_gpx_points(os.path.join(GPX_DIR, fname))
+        if len(points) < 2:
+            continue
+        act = activities_by_id.get(activity_id, {})
+        # Activity names on this account are consistently "<Location> ..."
+        # (e.g. "Worcester Running", "Barrington - W14 Sat Long Run...") -
+        # the first word is a reliable, already-real location label without
+        # needing real geocoding.
+        location = (name or act.get("name") or "Unknown").split()[0]
+        loc = locations.setdefault(location, {"routes": [], "distance_m": 0.0, "dates": []})
+        loc["routes"].append(points)
+        loc["distance_m"] += act.get("distance_meters", 0) or 0
+        if act.get("start_time"):
+            loc["dates"].append(act["start_time"][:10])
+
+    output_locations = {}
+    for name, loc in locations.items():
+        all_lats = [p[0] for route in loc["routes"] for p in route]
+        all_lons = [p[1] for route in loc["routes"] for p in route]
+        lat_min, lat_max = min(all_lats), max(all_lats)
+        lon_min, lon_max = min(all_lons), max(all_lons)
+        lat_mid = (lat_min + lat_max) / 2
+        # Longitude degrees shrink toward the poles - correct so the map isn't stretched.
+        lon_scale = math.cos(math.radians(lat_mid)) or 1.0
+
+        span_lat = max(lat_max - lat_min, 1e-6)
+        span_lon = max((lon_max - lon_min) * lon_scale, 1e-6)
+        target, pad = 600, 24
+        if span_lon >= span_lat:
+            vb_w, vb_h = target, target * (span_lat / span_lon)
+        else:
+            vb_h, vb_w = target, target * (span_lon / span_lat)
+        vb_w, vb_h = max(vb_w, 100), max(vb_h, 100)
+
+        def project(lat, lon, _lon_min=lon_min, _lat_max=lat_max, _span_lon=span_lon,
+                    _span_lat=span_lat, _lon_scale=lon_scale, _vb_w=vb_w, _vb_h=vb_h):
+            x = (lon - _lon_min) * _lon_scale / _span_lon * _vb_w + pad
+            y = (_lat_max - lat) / _span_lat * _vb_h + pad  # invert y: north up
+            return [round(x, 1), round(y, 1)]
+
+        output_locations[name] = {
+            "routes": [[project(lat, lon) for lat, lon in route] for route in loc["routes"]],
+            "run_count": len(loc["routes"]),
+            "total_distance_mi": round(loc["distance_m"] / 1609.344, 1),
+            "date_range": [min(loc["dates"]), max(loc["dates"])] if loc["dates"] else None,
+            "viewbox_width": round(vb_w + pad * 2, 1),
+            "viewbox_height": round(vb_h + pad * 2, 1),
+        }
+
+    ordered = dict(sorted(output_locations.items(), key=lambda kv: kv[1]["run_count"], reverse=True))
+    return {
+        "available": True,
+        "locations": ordered,
+        "total_routes": sum(l["run_count"] for l in ordered.values()),
+        "note": ("Routes are subsampled GPS tracks (every 6th recorded point) drawn as overlapping "
+                 "translucent lines - brighter where a route repeats. No street-map background is "
+                 "rendered, by design: this stays a single dependency-free page with no map-tile "
+                 "service or internet connection required to view it."),
+    }
+
+
 def main():
     save("meta.json", build_meta())
+    save("route_heatmap.json", build_route_heatmap())
     save("today.json", build_today())
     save("training.json", build_training())
     save("workouts.json", build_workouts())

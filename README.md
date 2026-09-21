@@ -73,7 +73,7 @@ so the server must be started from the **project root** (not from inside
 | Page | File | What it covers |
 |---|---|---|
 | Today | `app/today.html` | Daily check-in: "what matters today" callout, the daily readiness recommendation, today's snapshot tiles. |
-| Training | `app/training.html` | Rolling log: summary stats, 8-week consistency calendar, recent-runs table, training load (ATL/CTL/ACWR/load-focus). |
+| Training | `app/training.html` | Rolling log: summary stats, 8-week consistency calendar, recent-runs table, training load (ATL/CTL/ACWR/load-focus), and a route heatmap built from real GPX tracks. |
 | Workouts | `app/workouts.html` | Structured-session grading from real typed splits, plus the interactive workout builder. |
 | Performance | `app/performance.html` | Fitness trend, race-prediction confidence ranges, PR quality audit, power & HR deep-dive (incl. the LT-pace data-error flag). |
 | Marathon | `app/marathon.html` | Goal-race readiness tracking + the interactive GPX route/pacing tool (inactive until a course file is loaded — see `refresh/PULL.md`). |
