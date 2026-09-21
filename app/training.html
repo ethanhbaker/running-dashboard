@@ -82,7 +82,19 @@
       overflow: hidden;
       background: var(--grid);
     }
+    .route-map-big { height: 620px; }
     .leaflet-container { background: var(--grid); font-family: var(--font-body); }
+    .route-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    @media (max-width: 600px) {
+      .route-map-big { height: 420px; }
+    }
 
     @media (max-width: 600px) {
       .cal-grid { grid-template-columns: repeat(7, 1fr); gap: 3px; }

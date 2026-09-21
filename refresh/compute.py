@@ -1117,7 +1117,7 @@ def build_route_heatmap():
         "total_routes": sum(l["run_count"] for l in ordered.values()),
         "note": ("Routes are subsampled GPS tracks (every 6th recorded point) drawn as overlapping "
                  "translucent lines over a real map - brighter where a route repeats. Map tiles are "
-                 "loaded from CARTO/OpenStreetMap over the internet (the one part of this app that "
+                 "loaded from OpenStreetMap over the internet (the one part of this app that "
                  "isn't fully offline) - see refresh/PULL.md."),
     }
 

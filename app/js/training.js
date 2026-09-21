@@ -325,7 +325,7 @@ function destroyRouteMaps() {
   _activeRouteMaps = [];
 }
 
-function initRouteMap(containerId, loc) {
+function initUnifiedRouteMap(containerId, heatData) {
   // Standard OpenStreetMap raster tiles - free, no API key, no account
   // required. (CARTO's basemaps.cartocdn.com light/dark styles look nicer
   // and would match the app's theme, but now require a CARTO API key on
@@ -338,17 +338,23 @@ function initRouteMap(containerId, loc) {
   }).addTo(map);
 
   const layerGroup = L.layerGroup().addTo(map);
-  loc.routes.forEach((route) => {
-    if (route.length < 2) return;
-    L.polyline(route, {
-      color: HEAT_STROKE, weight: 2.2, opacity: 0.16,
-      lineCap: "round", lineJoin: "round",
-    }).addTo(layerGroup);
+  let overallBounds = null;
+  Object.values(heatData.locations).forEach((loc) => {
+    loc.routes.forEach((route) => {
+      if (route.length < 2) return;
+      L.polyline(route, {
+        color: HEAT_STROKE, weight: 2, opacity: 0.16,
+        lineCap: "round", lineJoin: "round",
+      }).addTo(layerGroup);
+    });
+    if (loc.bounds) {
+      const b = L.latLngBounds([loc.bounds[0][0], loc.bounds[0][1]], [loc.bounds[1][0], loc.bounds[1][1]]);
+      overallBounds = overallBounds ? overallBounds.extend(b) : b;
+    }
   });
 
-  const b = loc.bounds;
-  if (b) {
-    map.fitBounds([[b[0][0], b[0][1]], [b[1][0], b[1][1]]], { padding: [24, 24] });
+  if (overallBounds) {
+    map.fitBounds(overallBounds, { padding: [30, 30] });
   }
   _activeRouteMaps.push(map);
   return map;
@@ -375,32 +381,29 @@ function renderRouteHeatmapSection(heatData) {
     return section;
   }
 
-  const grid = el("div", { className: "card-grid" });
-  const pending = [];
-  Object.entries(heatData.locations).forEach(([name, loc], i) => {
-    const card = el("div", { className: "card" });
-    card.appendChild(el("div", {
-      className: "tile-label",
-      text: `${name} — ${loc.run_count} run${loc.run_count === 1 ? "" : "s"}, ${loc.total_distance_mi}mi`,
+  const card = el("div", { className: "card" });
+  const containerId = "route-map-unified";
+  card.appendChild(el("div", { className: "route-map route-map-big", attrs: { id: containerId } }));
+  section.appendChild(card);
+
+  // Compact per-location summary underneath the map, since it's no longer
+  // split into one map per location - zoom out on the map to see all of
+  // these at once, or in to see one cluster in street-level detail.
+  const summary = el("div", { className: "route-summary" });
+  Object.entries(heatData.locations).forEach(([name, loc]) => {
+    const rangeText = loc.date_range ? ` · ${longDate(loc.date_range[0])} – ${longDate(loc.date_range[1])}` : "";
+    summary.appendChild(el("div", {
+      className: "route-summary-item",
+      html: `<b>${name}</b> — ${loc.run_count} run${loc.run_count === 1 ? "" : "s"}, ${loc.total_distance_mi}mi${rangeText}`,
     }));
-    if (loc.date_range) {
-      card.appendChild(el("div", {
-        className: "section-note", attrs: { style: "text-align:left;margin-bottom:8px;" },
-        text: `${longDate(loc.date_range[0])} – ${longDate(loc.date_range[1])}`,
-      }));
-    }
-    const containerId = `route-map-${i}`;
-    card.appendChild(el("div", { className: "route-map", attrs: { id: containerId } }));
-    grid.appendChild(card);
-    pending.push([containerId, loc]);
   });
-  section.appendChild(grid);
+  section.appendChild(summary);
   section.appendChild(el("div", { className: "cal-note", attrs: { style: "margin-top:10px;" }, text: heatData.note }));
 
   // Leaflet needs its container attached to the DOM (with real layout
-  // dimensions) before init, so create the maps on the next tick, after
+  // dimensions) before init, so create the map on the next tick, after
   // this section has actually been appended to #main.
-  setTimeout(() => pending.forEach(([id, loc]) => initRouteMap(id, loc)), 0);
+  setTimeout(() => initUnifiedRouteMap(containerId, heatData), 0);
 
   return section;
 }
