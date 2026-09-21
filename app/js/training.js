@@ -311,31 +311,53 @@ function renderLoadSection(data) {
 }
 
 // ---------------------------------------------------------------------
-// Section 5: Route heatmap (real GPS tracks, no map-tile dependency)
+// Section 5: Route heatmap — real GPS tracks laid on a real tile map
+// (Leaflet + CARTO/OpenStreetMap tiles). This is the one part of the app
+// that needs an internet connection to view, by necessity of showing a
+// real basemap rather than an abstract shape.
 // ---------------------------------------------------------------------
 
-const HEAT_STROKE = "rgba(217, 73, 31, 0.14)";
+const HEAT_STROKE = "#d9491f";
+let _activeRouteMaps = [];
 
-function buildRouteHeatmapSvg(loc) {
-  const svg = svgEl("svg", {
-    viewBox: `0 0 ${loc.viewbox_width} ${loc.viewbox_height}`,
-    width: "100%",
-    preserveAspectRatio: "xMidYMid meet",
-  });
+function destroyRouteMaps() {
+  _activeRouteMaps.forEach((m) => { try { m.remove(); } catch (e) { /* already gone */ } });
+  _activeRouteMaps = [];
+}
+
+function initRouteMap(containerId, loc) {
+  // Standard OpenStreetMap raster tiles - free, no API key, no account
+  // required. (CARTO's basemaps.cartocdn.com light/dark styles look nicer
+  // and would match the app's theme, but now require a CARTO API key on
+  // their free tier, which this project deliberately avoids needing.)
+  const map = L.map(containerId, { scrollWheelZoom: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    subdomains: "abc",
+  }).addTo(map);
+
+  const layerGroup = L.layerGroup().addTo(map);
   loc.routes.forEach((route) => {
     if (route.length < 2) return;
-    const d = route.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
-    svg.appendChild(svgEl("path", {
-      d, fill: "none", stroke: HEAT_STROKE, "stroke-width": 1.6,
-      "stroke-linecap": "round", "stroke-linejoin": "round",
-    }));
+    L.polyline(route, {
+      color: HEAT_STROKE, weight: 2.2, opacity: 0.16,
+      lineCap: "round", lineJoin: "round",
+    }).addTo(layerGroup);
   });
-  return svg;
+
+  const b = loc.bounds;
+  if (b) {
+    map.fitBounds([[b[0][0], b[0][1]], [b[1][0], b[1][1]]], { padding: [24, 24] });
+  }
+  _activeRouteMaps.push(map);
+  return map;
 }
 
 function renderRouteHeatmapSection(heatData) {
+  destroyRouteMaps();
   const section = el("section", { className: "page-section" });
-  section.appendChild(sectionHeader("Route heatmap", "Real GPS tracks - brighter where a route repeats"));
+  section.appendChild(sectionHeader("Route heatmap", "Real GPS tracks on a real map - brighter where a route repeats"));
 
   if (!heatData || !heatData.available) {
     section.appendChild(el("div", {
@@ -345,8 +367,17 @@ function renderRouteHeatmapSection(heatData) {
     return section;
   }
 
+  if (typeof L === "undefined") {
+    section.appendChild(el("div", {
+      className: "empty-state",
+      text: "Map library failed to load (no internet connection?) - the route heatmap needs Leaflet + map tiles from a CDN.",
+    }));
+    return section;
+  }
+
   const grid = el("div", { className: "card-grid" });
-  Object.entries(heatData.locations).forEach(([name, loc]) => {
+  const pending = [];
+  Object.entries(heatData.locations).forEach(([name, loc], i) => {
     const card = el("div", { className: "card" });
     card.appendChild(el("div", {
       className: "tile-label",
@@ -358,13 +389,18 @@ function renderRouteHeatmapSection(heatData) {
         text: `${longDate(loc.date_range[0])} – ${longDate(loc.date_range[1])}`,
       }));
     }
-    const chartWrap = el("div", { className: "chart-wrap" });
-    chartWrap.appendChild(buildRouteHeatmapSvg(loc));
-    card.appendChild(chartWrap);
+    const containerId = `route-map-${i}`;
+    card.appendChild(el("div", { className: "route-map", attrs: { id: containerId } }));
     grid.appendChild(card);
+    pending.push([containerId, loc]);
   });
   section.appendChild(grid);
   section.appendChild(el("div", { className: "cal-note", attrs: { style: "margin-top:10px;" }, text: heatData.note }));
+
+  // Leaflet needs its container attached to the DOM (with real layout
+  // dimensions) before init, so create the maps on the next tick, after
+  // this section has actually been appended to #main.
+  setTimeout(() => pending.forEach(([id, loc]) => initRouteMap(id, loc)), 0);
 
   return section;
 }

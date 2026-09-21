@@ -1099,34 +1099,15 @@ def build_route_heatmap():
     for name, loc in locations.items():
         all_lats = [p[0] for route in loc["routes"] for p in route]
         all_lons = [p[1] for route in loc["routes"] for p in route]
-        lat_min, lat_max = min(all_lats), max(all_lats)
-        lon_min, lon_max = min(all_lons), max(all_lons)
-        lat_mid = (lat_min + lat_max) / 2
-        # Longitude degrees shrink toward the poles - correct so the map isn't stretched.
-        lon_scale = math.cos(math.radians(lat_mid)) or 1.0
-
-        span_lat = max(lat_max - lat_min, 1e-6)
-        span_lon = max((lon_max - lon_min) * lon_scale, 1e-6)
-        target, pad = 600, 24
-        if span_lon >= span_lat:
-            vb_w, vb_h = target, target * (span_lat / span_lon)
-        else:
-            vb_h, vb_w = target, target * (span_lon / span_lat)
-        vb_w, vb_h = max(vb_w, 100), max(vb_h, 100)
-
-        def project(lat, lon, _lon_min=lon_min, _lat_max=lat_max, _span_lon=span_lon,
-                    _span_lat=span_lat, _lon_scale=lon_scale, _vb_w=vb_w, _vb_h=vb_h):
-            x = (lon - _lon_min) * _lon_scale / _span_lon * _vb_w + pad
-            y = (_lat_max - lat) / _span_lat * _vb_h + pad  # invert y: north up
-            return [round(x, 1), round(y, 1)]
-
         output_locations[name] = {
-            "routes": [[project(lat, lon) for lat, lon in route] for route in loc["routes"]],
+            # Raw [lat, lon] pairs - the frontend lays these directly onto a
+            # real tile map (Leaflet), which handles projection/zoom/pan
+            # itself, so no local projection math happens here anymore.
+            "routes": [[[round(lat, 6), round(lon, 6)] for lat, lon in route] for route in loc["routes"]],
             "run_count": len(loc["routes"]),
             "total_distance_mi": round(loc["distance_m"] / 1609.344, 1),
             "date_range": [min(loc["dates"]), max(loc["dates"])] if loc["dates"] else None,
-            "viewbox_width": round(vb_w + pad * 2, 1),
-            "viewbox_height": round(vb_h + pad * 2, 1),
+            "bounds": [[min(all_lats), min(all_lons)], [max(all_lats), max(all_lons)]],
         }
 
     ordered = dict(sorted(output_locations.items(), key=lambda kv: kv[1]["run_count"], reverse=True))
@@ -1135,9 +1116,9 @@ def build_route_heatmap():
         "locations": ordered,
         "total_routes": sum(l["run_count"] for l in ordered.values()),
         "note": ("Routes are subsampled GPS tracks (every 6th recorded point) drawn as overlapping "
-                 "translucent lines - brighter where a route repeats. No street-map background is "
-                 "rendered, by design: this stays a single dependency-free page with no map-tile "
-                 "service or internet connection required to view it."),
+                 "translucent lines over a real map - brighter where a route repeats. Map tiles are "
+                 "loaded from CARTO/OpenStreetMap over the internet (the one part of this app that "
+                 "isn't fully offline) - see refresh/PULL.md."),
     }
 
 
